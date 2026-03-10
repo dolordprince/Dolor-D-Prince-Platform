@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Dolor D Prince — Virtual Numbers & OTP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --milk:#FAF8F5;--milk2:#F2EEE8;--milk3:#E8E2D9;
+  --dark:#1A1612;--dark2:#2C2620;
+  --gold:#C9A84C;--gold2:#E8C96A;--goldl:rgba(201,168,76,0.12);
+  --green:#2D7A4F;--red:#C0392B;
+  --text:#3D342A;--muted:#8B7355;--border:#DDD5C8;
+  --font-disp:'Playfair Display',serif;
+  --font-body:'DM Sans',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --shadow:0 4px 24px rgba(26,22,18,0.08);
+  --shadow-lg:0 12px 48px rgba(26,22,18,0.14);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--milk);color:var(--text);font-family:var(--font-body);font-size:15px;line-height:1.6;min-height:100vh}
+
+/* ── Animations ── */
+@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes welcomeIn{0%{opacity:0;transform:scale(0.92)}100%{opacity:1;transform:scale(1)}}
+
+/* ── Welcome Screen ── */
+#welcome{position:fixed;inset:0;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:1000;animation:welcomeIn .6s ease}
+.welcome-logo{font-family:var(--font-disp);font-size:clamp(36px,8vw,72px);color:var(--gold2);font-weight:900;letter-spacing:-2px;margin-bottom:12px;text-align:center}
+.welcome-sub{font-size:14px;color:rgba(255,255,255,.5);letter-spacing:.2em;text-transform:uppercase;margin-bottom:48px;font-family:var(--font-mono)}
+.welcome-loader{width:48px;height:2px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden;position:relative}
+.welcome-loader::after{content:'';position:absolute;inset:0;background:var(--gold);border-radius:2px;animation:shimmer 1.5s infinite;background-size:200% 100%;background-image:linear-gradient(90deg,transparent,var(--gold2),transparent)}
+
+/* ── Layout ── */
+#app{display:none;min-height:100vh}
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:240px;background:var(--dark);display:flex;flex-direction:column;z-index:100;transition:transform .3s}
+.sidebar-logo{padding:28px 24px 20px;border-bottom:1px solid rgba(255,255,255,.08)}
+.sidebar-logo-text{font-family:var(--font-disp);font-size:20px;color:var(--gold2);font-weight:900;letter-spacing:-.5px}
+.sidebar-logo-sub{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;text-transform:uppercase;font-family:var(--font-mono)}
+.sidebar-nav{flex:1;padding:16px 12px;overflow-y:auto}
+.nav-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;cursor:pointer;transition:all .2s;color:rgba(255,255,255,.5);font-size:14px;font-weight:500;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.85)}
+.nav-item.active{background:var(--goldl);color:var(--gold2);border:1px solid rgba(201,168,76,.2)}
+.nav-item .icon{font-size:18px;width:22px;text-align:center;flex-shrink:0}
+.nav-section{font-size:10px;color:rgba(255,255,255,.2);letter-spacing:.12em;text-transform:uppercase;padding:16px 14px 6px;font-family:var(--font-mono)}
+.sidebar-bottom{padding:16px 12px;border-top:1px solid rgba(255,255,255,.08)}
+.wallet-display{background:linear-gradient(135deg,var(--gold),#8B6914);border-radius:12px;padding:16px;margin-bottom:12px}
+.wallet-label{font-size:10px;color:rgba(255,255,255,.7);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;font-family:var(--font-mono)}
+.wallet-amount{font-family:var(--font-disp);font-size:22px;color:#fff;font-weight:700;letter-spacing:-.5px}
+.wallet-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:2px}
+.fund-btn{width:100%;background:var(--gold);color:var(--dark);font-size:13px;font-weight:600;padding:10px;border-radius:8px;border:none;cursor:pointer;transition:all .2s;font-family:var(--font-body)}
+.fund-btn:hover{background:var(--gold2);transform:translateY(-1px)}
+
+/* ── Main content ── */
+.main{margin-left:240px;min-height:100vh;padding:32px}
+.page{display:none;animation:fadeIn .4s ease}
+.page.active{display:block}
+.page-title{font-family:var(--font-disp);font-size:clamp(24px,3vw,36px);font-weight:900;color:var(--dark);letter-spacing:-.5px;margin-bottom:6px}
+.page-sub{font-size:14px;color:var(--muted);margin-bottom:28px}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:24px;box-shadow:var(--shadow)}
+.card-title{font-family:var(--font-disp);font-size:18px;font-weight:700;margin-bottom:16px;color:var(--dark)}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;right:0;width:80px;height:80px;background:var(--goldl);border-radius:50%;transform:translate(20px,-20px)}
+.stat-value{font-family:var(--font-disp);font-size:28px;font-weight:900;color:var(--dark);letter-spacing:-1px;margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.stat-icon{position:absolute;top:16px;right:16px;font-size:24px;opacity:.6}
+
+/* ── Tables ── */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{background:var(--milk2);padding:12px 16px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-family:var(--font-mono)}
+td{padding:14px 16px;border-top:1px solid var(--border);color:var(--text)}
+tr:hover td{background:var(--milk)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:100px;font-size:11px;font-weight:600;font-family:var(--font-mono)}
+.badge-pending{background:rgba(255,193,7,.15);color:#856404}
+.badge-completed,.badge-received{background:rgba(45,122,79,.12);color:var(--green)}
+.badge-failed,.badge-expired{background:rgba(192,57,43,.1);color:var(--red)}
+.badge-debit{background:rgba(192,57,43,.1);color:var(--red)}
+.badge-credit{background:rgba(45,122,79,.12);color:var(--green)}
+
+/* ── Service Grid ── */
+.service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:24px}
+.service-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;padding:16px;text-align:center;cursor:pointer;transition:all .2s}
+.service-card:hover,.service-card.selected{border-color:var(--gold);background:var(--goldl);transform:translateY(-2px);box-shadow:0 4px 16px rgba(201,168,76,.2)}
+.service-icon{font-size:28px;margin-bottom:8px}
+.service-name{font-size:13px;font-weight:600;margin-bottom:4px;color:var(--dark)}
+.service-price{font-size:12px;color:var(--gold);font-family:var(--font-mono);font-weight:600}
+
+/* ── OTP Display ── */
+.otp-box{background:var(--dark);border-radius:16px;padding:32px;text-align:center;margin:20px 0}
+.otp-label{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;font-family:var(--font-mono)}
+.otp-digits{font-family:var(--font-mono);font-size:40px;font-weight:700;color:var(--gold2);letter-spacing:8px}
+.otp-phone{font-size:13px;color:rgba(255,255,255,.5);margin-top:10px;font-family:var(--font-mono)}
+.otp-timer{font-size:12px;color:rgba(255,255,255,.4);margin-top:8px}
+.otp-waiting{animation:pulse 1.5s infinite;color:rgba(255,255,255,.4)}
+
+/* ── Forms ── */
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:7px;font-family:var(--font-mono)}
+.form-input{width:100%;background:var(--milk);border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;font-family:var(--font-body);font-size:15px;color:var(--text);outline:none;transition:border-color .2s}
+.form-input:focus{border-color:var(--gold);background:#fff}
+.form-input::placeholder{color:var(--milk3)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 24px;border-radius:10px;border:none;cursor:pointer;font-size:15px;font-weight:600;font-family:var(--font-body);transition:all .2s}
+.btn-primary{background:var(--gold);color:var(--dark)}
+.btn-primary:hover{background:var(--gold2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,168,76,.35)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-outline{background:transparent;color:var(--gold);border:1.5px solid var(--gold)}
+.btn-outline:hover{background:var(--goldl)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-full{width:100%}
+.btn-sm{padding:8px 16px;font-size:13px}
+
+/* ── Auth pages ── */
+#auth-page{display:none;min-height:100vh;background:var(--dark);align-items:center;justify-content:center;padding:24px}
+#auth-page.visible{display:flex}
+.auth-card{background:var(--milk);border-radius:24px;padding:40px;width:100%;max-width:420px;box-shadow:var(--shadow-lg);animation:fadeIn .5s ease}
+.auth-logo{font-family:var(--font-disp);font-size:28px;font-weight:900;color:var(--gold);letter-spacing:-.5px;text-align:center;margin-bottom:4px}
+.auth-tagline{font-size:12px;color:var(--muted);text-align:center;letter-spacing:.1em;text-transform:uppercase;margin-bottom:32px;font-family:var(--font-mono)}
+.auth-tabs{display:flex;gap:0;background:var(--milk2);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;padding:9px;text-align:center;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;transition:all .2s;border:none;background:none;color:var(--muted);font-family:var(--font-body)}
+.auth-tab.active{background:#fff;color:var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+
+/* ── PURITY Chat ── */
+.chat-wrap{height:440px;display:flex;flex-direction:column;background:var(--milk);border-radius:14px;border:1px solid var(--border);overflow:hidden}
+.chat-header{background:var(--dark);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.chat-avatar{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.chat-name{font-family:var(--font-mono);font-size:13px;color:#fff;font-weight:600}
+.chat-status{font-size:11px;color:rgba(255,255,255,.45)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
+.msg{max-width:80%;padding:10px 14px;border-radius:12px;font-size:14px;line-height:1.5;animation:slideIn .3s ease}
+.msg-bot{background:#fff;border:1px solid var(--border);color:var(--text);align-self:flex-start;border-bottom-left-radius:4px}
+.msg-user{background:var(--gold);color:var(--dark);align-self:flex-end;border-bottom-right-radius:4px;font-weight:500}
+.chat-input-row{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--border);background:#fff}
+.chat-input{flex:1;background:var(--milk);border:1.5px solid var(--border);border-radius:8px;padding:10px 14px;font-family:var(--font-body);font-size:14px;color:var(--text);outline:none;resize:none;height:40px}
+.chat-input:focus{border-color:var(--gold)}
+.chat-send{background:var(--gold);color:var(--dark);border:none;border-radius:8px;width:40px;height:40px;cursor:pointer;font-size:18px;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.chat-send:hover{background:var(--gold2);transform:scale(1.05)}
+
+/* ── Toast ── */
+.toast-wrap{position:fixed;top:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--dark);color:#fff;padding:12px 18px;border-radius:10px;font-size:14px;box-shadow:var(--shadow-lg);animation:slideIn .3s ease;pointer-events:auto;display:flex;align-items:center;gap:10px;max-width:320px}
+.toast.success{border-left:3px solid var(--green)}
+.toast.error{border-left:3px solid var(--red)}
+.toast.info{border-left:3px solid var(--gold)}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,22,18,.6);z-index:500;display:none;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:440px;box-shadow:var(--shadow-lg);animation:fadeIn .3s ease}
+.modal-title{font-family:var(--font-disp);font-size:22px;font-weight:900;margin-bottom:20px;color:var(--dark)}
+
+/* ── Admin ── */
+.admin-badge{background:var(--gold);color:var(--dark);font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;font-family:var(--font-mono);letter-spacing:.06em;vertical-align:middle}
+
+/* ── Spinner ── */
+.spinner{width:20px;height:20px;border:2px solid rgba(0,0,0,.15);border-top-color:currentColor;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+/* ── Mobile ── */
+.menu-toggle{display:none;position:fixed;top:16px;left:16px;z-index:200;background:var(--dark);border:none;border-radius:8px;width:40px;height:40px;cursor:pointer;align-items:center;justify-content:center;font-size:20px;color:#fff}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:24px 16px}
+  .menu-toggle{display:flex}
+  .stat-grid{grid-template-columns:1fr 1fr}
+  .service-grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}
+}
+</style>
+</head>
+<body>
+
+<!-- Welcome Screen -->
+<div id="welcome">
+  <div class="welcome-logo">Dolor D Prince</div>
+  <div class="welcome-sub">Virtual Numbers · OTP · Africa</div>
+  <div class="welcome-loader"></div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- Auth Page -->
+<div id="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">Dolor D Prince</div>
+    <div class="auth-tagline">Virtual Numbers & OTP Platform</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Register</button>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="login-email" placeholder="you@email.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="login-password" placeholder="Your password" autocomplete="current-password"/>
+      </div>
+      <button class="btn btn-primary btn-full" id="login-btn" onclick="doLogin()">Login</button>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" type="text" id="reg-name" placeholder="David Prince"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="you@email.com" autocomplete="email"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Phone (optional)</label>
+        <input class="form-input" type="tel" id="reg-phone" placeholder="08012345678"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" type="password" id="reg-password" placeholder="Min 6 characters" autocomplete="new-password"/>
+      </div>
+      <button class="btn btn-primary btn-full" id="register-btn" onclick="doRegister()">Create Account</button>
+    </div>
+
+    <!-- OTP Verify -->
+    <div id="otp-form" style="display:none">
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">📧</div>
+        <div style="font-size:15px;color:var(--muted)">Enter the OTP sent to your email</div>
+        <div id="otp-hint" style="font-size:12px;color:var(--gold);font-family:var(--font-mono);margin-top:4px"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">6-Digit OTP</label>
+        <input class="form-input" type="number" id="otp-input" placeholder="123456" style="text-align:center;font-size:22px;letter-spacing:4px"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doVerifyOTP()">Verify OTP</button>
+      <button class="btn btn-outline btn-full" style="margin-top:10px" onclick="doResendOTP()">Resend OTP</button>
+    </div>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <button class="menu-toggle" onclick="toggleMobile()" aria-label="Menu">☰</button>
+
+  <!-- Sidebar -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-text">Dolor D Prince</div>
+      <div class="sidebar-logo-sub">Virtual Number Platform</div>
+    </div>
+
+    <div class="sidebar-nav">
+      <div class="nav-section">Main</div>
+      <button class="nav-item active" onclick="showPage('dashboard')" data-page="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </button>
+      <button class="nav-item" onclick="showPage('order')" data-page="order">
+        <span class="icon">🛒</span> Order Number
+      </button>
+      <button class="nav-item" onclick="showPage('my-orders')" data-page="my-orders">
+        <span class="icon">📋</span> My Orders
+      </button>
+      <button class="nav-item" onclick="showPage('transactions')" data-page="transactions">
+        <span class="icon">💳</span> Transactions
+      </button>
+      <button class="nav-item" onclick="showPage('purity')" data-page="purity">
+        <span class="icon">🤖</span> PURITY AI
+      </button>
+
+      <div class="nav-section" id="admin-section" style="display:none">Admin</div>
+      <button class="nav-item" onclick="showPage('admin')" data-page="admin" id="admin-nav" style="display:none">
+        <span class="icon">⚙️</span> Admin Panel
+      </button>
+    </div>
+
+    <div class="sidebar-bottom">
+      <div class="wallet-display">
+        <div class="wallet-label">Wallet Balance</div>
+        <div class="wallet-amount" id="sidebar-balance">₦0.00</div>
+        <div class="wallet-sub">Nigerian Naira</div>
+      </div>
+      <button class="fund-btn" onclick="openFundModal()">+ Fund Wallet</button>
+      <button class="nav-item" style="margin-top:8px;color:rgba(255,100,100,.7)" onclick="logout()">
+        <span class="icon">🚪</span> Logout
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Welcome back, <span id="user-name">—</span></div>
+      <div class="page-sub">Here's your account overview</div>
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-icon">💰</div>
+          <div class="stat-label">Wallet Balance</div>
+          <div class="stat-value" id="dash-balance">₦0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📦</div>
+          <div class="stat-label">Total Orders</div>
+          <div class="stat-value" id="dash-orders">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✅</div>
+          <div class="stat-label">OTPs Received</div>
+          <div class="stat-value" id="dash-otps">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">💸</div>
+          <div class="stat-label">Total Spent</div>
+          <div class="stat-value" id="dash-spent">₦0</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div class="card">
+          <div class="card-title">Recent Orders</div>
+          <div id="recent-orders-list"><div style="color:var(--muted);font-size:14px">No orders yet</div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Quick Actions</div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <button class="btn btn-primary btn-full" onclick="showPage('order')">🛒 Order a Number</button>
+            <button class="btn btn-outline btn-full" onclick="openFundModal()">💳 Fund Wallet</button>
+            <button class="btn btn-outline btn-full" onclick="showPage('purity')">🤖 Ask PURITY</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Page -->
+    <div class="page" id="page-order">
+      <div class="page-title">Order a Number</div>
+      <div class="page-sub">Choose a service and country to get a virtual number</div>
+
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Select Country</div>
+        <select class="form-input" id="country-select" style="max-width:300px">
+          <option value="nigeria">🇳🇬 Nigeria</option>
+          <option value="usa">🇺🇸 United States</option>
+          <option value="uk">🇬🇧 United Kingdom</option>
+          <option value="india">🇮🇳 India</option>
+          <option value="russia">🇷🇺 Russia</option>
+          <option value="china">🇨🇳 China</option>
+          <option value="brazil">🇧🇷 Brazil</option>
+          <option value="france">🇫🇷 France</option>
+          <option value="germany">🇩🇪 Germany</option>
+          <option value="indonesia">🇮🇩 Indonesia</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Select Service</div>
+        <div class="service-grid" id="service-grid">
+          <div style="color:var(--muted);font-size:14px;grid-column:1/-1">Loading services...</div>
+        </div>
+        <button class="btn btn-primary" id="order-btn" onclick="placeOrder()" disabled style="min-width:200px">
+          Select a service first
+        </button>
+      </div>
+
+      <!-- Active Order OTP -->
+      <div id="active-order" style="display:none;margin-top:20px">
+        <div class="card">
+          <div class="card-title">Your Number & OTP</div>
+          <div class="otp-box">
+            <div class="otp-label">Phone Number</div>
+            <div class="otp-phone" id="order-phone">+234 xxx xxx xxx</div>
+            <div style="margin:20px 0;border-top:1px solid rgba(255,255,255,.1)"></div>
+            <div class="otp-label">OTP Code</div>
+            <div class="otp-digits" id="order-otp"><span class="otp-waiting">Waiting for SMS...</span></div>
+            <div class="otp-timer" id="order-timer">Expires in 10:00</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="cancelPolling()">Cancel / New Order</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Orders -->
+    <div class="page" id="page-my-orders">
+      <div class="page-title">My Orders</div>
+      <div class="page-sub">All your virtual number orders</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Service</th><th>Phone</th><th>OTP</th><th>Status</th><th>Price</th><th>Date</th></tr></thead>
+          <tbody id="orders-table"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Transactions -->
+    <div class="page" id="page-transactions">
+      <div class="page-title">Transaction History</div>
+      <div class="page-sub">All wallet credits and debits</div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Type</th><th>Amount</th><th>Description</th><th>Reference</th><th>Status</th><th>Date</th></tr></thead>
+          <tbody id="txn-table"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:32px">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PURITY AI -->
+    <div class="page" id="page-purity">
+      <div class="page-title">PURITY AI Assistant</div>
+      <div class="page-sub">Ask me anything about Dolor D Prince services</div>
+      <div class="chat-wrap">
+        <div class="chat-header">
+          <div class="chat-avatar">🤖</div>
+          <div>
+            <div class="chat-name">PURITY</div>
+            <div class="chat-status">Online — Dolor D Prince AI</div>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+          <div class="msg msg-bot">Hi! I'm PURITY, your Dolor D Prince assistant. I can help you with ordering numbers, funding your wallet, or anything about our services. How can I help you today?</div>
+        </div>
+        <div class="chat-input-row">
+          <textarea class="chat-input" id="chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendPurity()}"></textarea>
+          <button class="chat-send" onclick="sendPurity()">➤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="page" id="page-admin">
+      <div class="page-title">Admin Panel <span class="admin-badge">ADMIN</span></div>
+      <div class="page-sub">Real-time platform management</div>
+      <div class="stat-grid" id="admin-stats">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value" id="a-users">—</div></div>
+        <div class="stat-card"><div class="stat-label">Total Orders</div><div class="stat-value" id="a-orders">—</div></div>
+        <div class="stat-card"><div class="stat-label">Revenue (NGN)</div><div class="stat-value" id="a-revenue">—</div></div>
+        <div class="stat-card"><div class="stat-label">Today's Orders</div><div class="stat-value" id="a-today">—</div></div>
+        <div class="stat-card"><div class="stat-label">Wallet Holdings</div><div class="stat-value" id="a-wallets">—</div></div>
+      </div>
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">All Users</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Balance</th><th>Verified</th><th>Actions</th></tr></thead>
+            <tbody id="admin-users-table"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Recent Transactions</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>User</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+            <tbody id="admin-txn-table"><tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- Fund Modal -->
+<div class="modal-overlay" id="fund-modal">
+  <div class="modal">
+    <div class="modal-title">Fund Your Wallet</div>
+    <div class="form-group">
+      <label class="form-label">Amount (NGN)</label>
+      <input class="form-input" type="number" id="fund-amount" placeholder="e.g. 1000" min="100"/>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Minimum: ₦100 · Powered by Kora</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+      <button class="btn btn-outline btn-sm" onclick="setAmount(500)">₦500</button>
+      <button class="btn btn-outline btn-sm" onclick="setAmount(1000)">₦1,000</button>
+      <button class="btn btn-outline btn-sm" onclick="setAmount(2000)">₦2,000</button>
+      <button class="btn btn-outline btn-sm" onclick="setAmount(5000)">₦5,000</button>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-primary" style="flex:1" onclick="doFundWallet()">Pay with Kora</button>
+      <button class="btn btn-outline" onclick="closeFundModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let token = localStorage.getItem('ddp_token');
+let user = JSON.parse(localStorage.getItem('ddp_user') || 'null');
+let pendingUserId = null;
+let selectedService = null;
+let pollInterval = null;
+let orderTimer = null;
+let purityHistory = [];
+
+// ── Init ──────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    document.getElementById('welcome').style.opacity = '0';
+    document.getElementById('welcome').style.transition = 'opacity .5s';
+    setTimeout(function() {
+      document.getElementById('welcome').style.display = 'none';
+      if (token && user) {
+        showApp();
+      } else {
+        showAuth();
+      }
+    }, 500);
+  }, 1800);
+});
+
+// ── Auth ──────────────────────────────────────────────────
+function showAuth() {
+  document.getElementById('auth-page').classList.add('visible');
+  document.getElementById('app').style.display = 'none';
+}
+
+function showApp() {
+  document.getElementById('auth-page').classList.remove('visible');
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('user-name').textContent = user.fullname.split(' ')[0];
+  updateBalance(user.wallet_balance || 0);
+  if (user.is_admin) {
+    document.getElementById('admin-section').style.display = 'block';
+    document.getElementById('admin-nav').style.display = 'flex';
+  }
+  loadDashboard();
+  loadServices();
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t,i) => t.classList.toggle('active', (tab==='login'?i===0:i===1)));
+  document.getElementById('login-form').style.display = tab==='login' ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+  document.getElementById('otp-form').style.display = 'none';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) return toast('Enter email and password', 'error');
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Logging in...';
+  try {
+    const r = await api('/auth/login', 'POST', { email, password });
+    token = r.token; user = r.user;
+    localStorage.setItem('ddp_token', token);
+    localStorage.setItem('ddp_user', JSON.stringify(user));
+    toast('Welcome back, ' + user.fullname.split(' ')[0] + '!', 'success');
+    showApp();
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Login';
+  }
+}
+
+async function doRegister() {
+  const fullname = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const phone = document.getElementById('reg-phone').value.trim();
+  const password = document.getElementById('reg-password').value;
+  if (!fullname || !email || !password) return toast('Fill all required fields', 'error');
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating...';
+  try {
+    const r = await api('/auth/register', 'POST', { fullname, email, phone, password });
+    pendingUserId = r.userId;
+    if (r.otp_demo) document.getElementById('otp-hint').textContent = 'Demo OTP: ' + r.otp_demo;
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('otp-form').style.display = 'block';
+    toast('Account created! Check your email for OTP', 'success');
+  } catch(e) {
+    toast(e.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = 'Create Account';
+  }
+}
+
+async function doVerifyOTP() {
+  const otp = document.getElementById('otp-input').value.trim();
+  if (!otp) return toast('Enter the OTP', 'error');
+  try {
+    const r = await api('/auth/verify-otp', 'POST', { userId: pendingUserId, otp });
+    token = r.token; user = r.user;
+    localStorage.setItem('ddp_token', token);
+    localStorage.setItem('ddp_user', JSON.stringify(user));
+    toast('Email verified! Welcome to Dolor D Prince', 'success');
+    showApp();
+  } catch(e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function doResendOTP() {
+  try {
+    const r = await api('/auth/resend-otp', 'POST', { userId: pendingUserId });
+    if (r.otp_demo) document.getElementById('otp-hint').textContent = 'Demo OTP: ' + r.otp_demo;
+    toast('OTP resent', 'info');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+function logout() {
+  localStorage.removeItem('ddp_token');
+  localStorage.removeItem('ddp_user');
+  token = null; user = null;
+  showAuth();
+}
+
+// ── Navigation ────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelector('[data-page="' + name + '"]')?.classList.add('active');
+  if (name === 'transactions') loadTransactions();
+  if (name === 'my-orders') loadMyOrders();
+  if (name === 'admin') loadAdmin();
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+function toggleMobile() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+// ── Dashboard ─────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    const [orders, txns] = await Promise.all([
+      api('/orders'), api('/wallet/transactions')
+    ]);
+    const completed = (orders.orders||[]).filter(o => o.status === 'received').length;
+    const spent = (txns.transactions||[]).filter(t => t.type==='debit').reduce((s,t) => s+t.amount, 0);
+    document.getElementById('dash-orders').textContent = orders.orders?.length || 0;
+    document.getElementById('dash-otps').textContent = completed;
+    document.getElementById('dash-spent').textContent = '₦' + spent.toLocaleString();
+    const recentHtml = (orders.orders||[]).slice(0,5).map(o =>
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">' +
+      '<div><div style="font-weight:600">' + o.service + '</div><div style="font-size:12px;color:var(--muted)">' + o.phone + '</div></div>' +
+      '<span class="badge badge-' + o.status + '">' + o.status + '</span></div>'
+    ).join('') || '<div style="color:var(--muted);font-size:14px">No orders yet</div>';
+    document.getElementById('recent-orders-list').innerHTML = recentHtml;
+    const balRes = await api('/wallet/balance');
+    updateBalance(balRes.balance);
+  } catch(e) { console.error(e); }
+}
+
+// ── Wallet ─────────────────────────────────────────────────
+function updateBalance(balance) {
+  const fmt = '₦' + Number(balance).toLocaleString('en-NG', {minimumFractionDigits:2});
+  document.getElementById('sidebar-balance').textContent = fmt;
+  document.getElementById('dash-balance').textContent = '₦' + Number(balance).toLocaleString();
+  if (user) user.wallet_balance = balance;
+}
+
+function openFundModal() { document.getElementById('fund-modal').classList.add('open'); }
+function closeFundModal() { document.getElementById('fund-modal').classList.remove('open'); }
+function setAmount(n) { document.getElementById('fund-amount').value = n; }
+
+async function doFundWallet() {
+  const amount = parseFloat(document.getElementById('fund-amount').value);
+  if (!amount || amount < 100) return toast('Minimum funding is ₦100', 'error');
+  try {
+    const r = await api('/wallet/fund', 'POST', { amount });
+    closeFundModal();
+    toast('Redirecting to Kora payment...', 'info');
+    window.open(r.checkout_url, '_blank');
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── Services & Orders ─────────────────────────────────────
+async function loadServices() {
+  try {
+    const r = await api('/orders/services');
+    const services = r.services || [];
+    const icons = {facebook:'📘',whatsapp:'💬',instagram:'📸',telegram:'✈️',twitter:'🐦',google:'🔍',tiktok:'🎵',snapchat:'👻',uber:'🚗',amazon:'📦',netflix:'🎬',paypal:'💰',microsoft:'🪟',apple:'🍎',discord:'🎮',linkedin:'💼',spotify:'🎧',airbnb:'🏠',booking:'🏨',zoom:'📹'};
+    document.getElementById('service-grid').innerHTML = services.slice(0,40).map(s =>
+      '<div class="service-card" onclick="selectService(this,\'' + s.name + '\',' + s.price + ')" data-service="' + s.name + '">' +
+      '<div class="service-icon">' + (icons[s.name] || '📱') + '</div>' +
+      '<div class="service-name">' + s.displayName + '</div>' +
+      '<div class="service-price">₦' + s.price + '</div></div>'
+    ).join('');
+  } catch(e) {
+    console.error('Services:', e);
+    document.getElementById('service-grid').innerHTML = '<div style="color:var(--muted)">Could not load services. Check 5SIM API key.</div>';
+  }
+}
+
+function selectService(el, name, price) {
+  document.querySelectorAll('.service-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedService = { name, price };
+  const btn = document.getElementById('order-btn');
+  btn.disabled = false;
+  btn.textContent = 'Order ' + name + ' for ₦' + price;
+}
+
+async function placeOrder() {
+  if (!selectedService) return;
+  const country = document.getElementById('country-select').value;
+  const btn = document.getElementById('order-btn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Getting number...';
+  try {
+    const r = await api('/orders/place', 'POST', { service: selectedService.name, country });
+    const order = r.order;
+    document.getElementById('active-order').style.display = 'block';
+    document.getElementById('order-phone').textContent = order.phone;
+    document.getElementById('order-otp').innerHTML = '<span class="otp-waiting">Waiting for SMS...</span>';
+    toast('Number obtained: ' + order.phone, 'success');
+    startOTPPolling(order.id, order.expires_at);
+    btn.textContent = 'Getting next number...';
+    const balRes = await api('/wallet/balance');
+    updateBalance(balRes.balance);
+  } catch(e) {
+    toast(e.message, 'error');
+    btn.disabled = false;
+    btn.textContent = 'Order ' + selectedService.name + ' for ₦' + selectedService.price;
+  }
+}
+
+function startOTPPolling(orderId, expiresAt) {
+  cancelPolling();
+  const expiry = new Date(expiresAt);
+  orderTimer = setInterval(function() {
+    const remaining = Math.max(0, Math.floor((expiry - new Date()) / 1000));
+    const m = Math.floor(remaining/60);
+    const s = remaining%60;
+    document.getElementById('order-timer').textContent = 'Expires in ' + m + ':' + (s<10?'0':'') + s;
+    if (remaining <= 0) { cancelPolling(); document.getElementById('order-otp').textContent = 'EXPIRED'; }
+  }, 1000);
+
+  pollInterval = setInterval(async function() {
+    try {
+      const r = await api('/orders/' + orderId + '/otp');
+      if (r.otp) {
+        document.getElementById('order-otp').textContent = r.otp;
+        cancelPolling();
+        toast('OTP received: ' + r.otp, 'success');
+        playAlert();
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+function cancelPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+  if (orderTimer) { clearInterval(orderTimer); orderTimer = null; }
+  document.getElementById('active-order').style.display = 'none';
+  const btn = document.getElementById('order-btn');
+  if (selectedService) { btn.disabled = false; btn.textContent = 'Order ' + selectedService.name + ' for ₦' + selectedService.price; }
+}
+
+function playAlert() {
+  try {
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
+}
+
+// ── Transactions ──────────────────────────────────────────
+async function loadTransactions() {
+  try {
+    const r = await api('/wallet/transactions');
+    const rows = (r.transactions||[]).map(t =>
+      '<tr><td><span class="badge badge-' + t.type + '">' + t.type + '</span></td>' +
+      '<td style="font-family:var(--font-mono);font-weight:600">₦' + Number(t.amount).toLocaleString() + '</td>' +
+      '<td>' + (t.description||'—') + '</td>' +
+      '<td style="font-family:var(--font-mono);font-size:12px">' + t.reference + '</td>' +
+      '<td><span class="badge badge-' + t.status + '">' + t.status + '</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + new Date(t.created_at).toLocaleDateString() + '</td></tr>'
+    ).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No transactions yet</td></tr>';
+    document.getElementById('txn-table').innerHTML = rows;
+  } catch(e) { console.error(e); }
+}
+
+// ── My Orders ─────────────────────────────────────────────
+async function loadMyOrders() {
+  try {
+    const r = await api('/orders');
+    const rows = (r.orders||[]).map(o =>
+      '<tr><td style="text-transform:capitalize">' + o.service + '</td>' +
+      '<td style="font-family:var(--font-mono)">' + (o.phone||'—') + '</td>' +
+      '<td style="font-family:var(--font-mono);color:var(--gold);font-weight:700">' + (o.otp||'—') + '</td>' +
+      '<td><span class="badge badge-' + o.status + '">' + o.status + '</span></td>' +
+      '<td style="font-family:var(--font-mono)">₦' + o.price + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + new Date(o.created_at).toLocaleDateString() + '</td></tr>'
+    ).join('') || '<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No orders yet</td></tr>';
+    document.getElementById('orders-table').innerHTML = rows;
+  } catch(e) { console.error(e); }
+}
+
+// ── Admin ─────────────────────────────────────────────────
+async function loadAdmin() {
+  try {
+    const [stats, users, txns] = await Promise.all([
+      api('/admin/stats'), api('/admin/users'), api('/admin/transactions')
+    ]);
+    document.getElementById('a-users').textContent = stats.totalUsers;
+    document.getElementById('a-orders').textContent = stats.totalOrders;
+    document.getElementById('a-revenue').textContent = '₦' + Number(stats.totalRevenue).toLocaleString();
+    document.getElementById('a-today').textContent = stats.todayOrders;
+    document.getElementById('a-wallets').textContent = '₦' + Number(stats.totalWallets).toLocaleString();
+
+    document.getElementById('admin-users-table').innerHTML = (users.users||[]).map(u =>
+      '<tr><td>' + u.fullname + '</td><td>' + u.email + '</td>' +
+      '<td style="font-family:var(--font-mono)">₦' + Number(u.wallet_balance).toLocaleString() + '</td>' +
+      '<td><span class="badge badge-' + (u.is_verified?'completed':'pending') + '">' + (u.is_verified?'Yes':'No') + '</span></td>' +
+      '<td><button class="btn btn-sm ' + (u.is_banned?'btn-outline':'btn-danger') + '" onclick="banUser(\'' + u.id + '\',' + !u.is_banned + ')">' + (u.is_banned?'Unban':'Ban') + '</button></td></tr>'
+    ).join('') || '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--muted)">No users</td></tr>';
+
+    document.getElementById('admin-txn-table').innerHTML = (txns.transactions||[]).slice(0,20).map(t =>
+      '<tr><td>' + (t.users?.email||'—') + '</td>' +
+      '<td><span class="badge badge-' + t.type + '">' + t.type + '</span></td>' +
+      '<td style="font-family:var(--font-mono)">₦' + Number(t.amount).toLocaleString() + '</td>' +
+      '<td><span class="badge badge-' + t.status + '">' + t.status + '</span></td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + new Date(t.created_at).toLocaleDateString() + '</td></tr>'
+    ).join('');
+  } catch(e) { console.error(e); }
+}
+
+async function banUser(id, banned) {
+  try {
+    await api('/admin/users/' + id + '/ban', 'PATCH', { banned });
+    toast(banned ? 'User banned' : 'User unbanned', 'info');
+    loadAdmin();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── PURITY AI ─────────────────────────────────────────────
+async function sendPurity() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  addChatMsg(msg, 'user');
+  purityHistory.push({ role: 'user', content: msg });
+  const thinking = addChatMsg('...', 'bot');
+  try {
+    const r = await api('/purity/chat', 'POST', { message: msg, history: purityHistory.slice(-6) });
+    thinking.textContent = r.reply;
+    purityHistory.push({ role: 'assistant', content: r.reply });
+  } catch(e) {
+    thinking.textContent = 'Connection issue. Please try again.';
+  }
+}
+
+function addChatMsg(text, who) {
+  const wrap = document.getElementById('chat-messages');
+  const d = document.createElement('div');
+  d.className = 'msg msg-' + who;
+  d.textContent = text;
+  wrap.appendChild(d);
+  wrap.scrollTop = wrap.scrollHeight;
+  return d;
+}
+
+// ── API Helper ────────────────────────────────────────────
+async function api(path, method, body) {
+  const opts = {
+    method: method || 'GET',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': 'Bearer ' + token } : {}) }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(API + '/api' + path, opts);
+  const data = await r.json();
+  if (!r.ok) throw new Error(data.error || 'Request failed');
+  return data;
+}
+
+// ── Toast ─────────────────────────────────────────────────
+function toast(msg, type) {
+  type = type || 'info';
+  const icons = { success:'✓', error:'✕', info:'ℹ' };
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = '<span>' + icons[type] + '</span><span>' + msg + '</span>';
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(function() { el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(function(){ el.remove(); }, 400); }, 4000);
+}
+</script>
+</body>
+</html>
